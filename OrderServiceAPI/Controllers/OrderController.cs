@@ -4,55 +4,56 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using OrderService.Models;
 
 namespace OrderServiceAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/order/")]
     [ApiController]
     public class OrderController : ControllerBase
     {
-        private readonly string schemaPath = Path.Combine(Directory.GetCurrentDirectory(), "Schemas", "orderSchema.json");
+       
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly string _shippingServiceUrl = "http://shipping-service/api/shipping"; // Konfigurerbar i miljø
 
-        private JSchema LoadSchema()
+        public OrderController(IHttpClientFactory httpClientFactory)
         {
-            if (!System.IO.File.Exists(schemaPath))
-            {
-                throw new FileNotFoundException($"JSON schema file not found at {schemaPath}");
-            }
-
-            string schemaJson = System.IO.File.ReadAllText(schemaPath);
-            return JSchema.Parse(schemaJson);
+            _httpClientFactory = httpClientFactory;
         }
 
-        [HttpPost]
-        [Route("validate")]
-        public IActionResult ValidateOrder([FromBody] JObject orderData)
+        [HttpPost("validate")]
+        public async Task<IActionResult> PostOrder([FromBody] Order order)
         {
-            if (orderData == null)
+            if (order == null)
+                return BadRequest("Ordre er tom");
+
+            // Indlæs JSON Schema
+            var schemaText = System.IO.File.ReadAllText("order-schema.json");
+            JSchema schema = JSchema.Parse(schemaText);
+
+            // Konverter ordre til JSON
+            JObject orderJson = JObject.Parse(JsonConvert.SerializeObject(order));
+
+            // Valider mod JSON Schema
+            if (!orderJson.IsValid(schema, out IList<string> errors))
             {
-                return BadRequest(new { message = "Ordren kan ikke være tom." });
+                return BadRequest(new { error = "Ordren er ikke valid", details = errors });
             }
 
-            try
-            {
-                // Læs schema fra fil
-                JSchema schema = LoadSchema();
+            // Send ordre til ShippingService
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.PostAsync(
+                _shippingServiceUrl,
+                new StringContent(JsonConvert.SerializeObject(order), Encoding.UTF8, "application/json"));
 
-                // Valider JSON mod schema
-                if (!orderData.IsValid(schema, out IList<string> validationErrors))
-                {
-                    return BadRequest(new { message = "JSON schema validation failed.", errors = validationErrors });
-                }
-
-                return Ok(new { message = "Ordren er valideret og accepteret." });
-            }
-            catch (FileNotFoundException ex)
+            if (response.IsSuccessStatusCode)
             {
-                return StatusCode(500, new { message = "Schema-fil ikke fundet.", error = ex.Message });
+                return Ok("Ordren er valideret og sendt til ShippingService");
             }
-            catch (JsonReaderException ex)
+            else
             {
-                return StatusCode(500, new { message = "Fejl ved parsing af schema.", error = ex.Message });
+                return StatusCode((int)response.StatusCode, "Fejl ved afsendelse til ShippingService");
             }
         }
     }
