@@ -40,21 +40,25 @@ namespace OrderServiceAPI.Controllers
             {
                 return BadRequest(new { error = "Ordren er ikke valid", details = errors });
             }
-
-            // Send ordre til ShippingService
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PostAsync(
-                _shippingServiceUrl,
-                new StringContent(JsonConvert.SerializeObject(order), Encoding.UTF8, "application/json"));
-
-            if (response.IsSuccessStatusCode)
-            {
-                return Ok("Ordren er valideret og sendt til ShippingService");
-            }
             else
             {
-                return StatusCode((int)response.StatusCode, "Fejl ved afsendelse til ShippingService");
+                return Ok("Ordren er valid");
             }
+
+            //// Send ordre til ShippingService
+            //var client = _httpClientFactory.CreateClient();
+            //var response = await client.PostAsync(
+            //    _shippingServiceUrl,
+            //    new StringContent(JsonConvert.SerializeObject(order), Encoding.UTF8, "application/json"));
+
+            //if (response.IsSuccessStatusCode)
+            //{
+            //    return Ok("Ordren er valideret og sendt til ShippingService");
+            //}
+            //else
+            //{
+            //    return StatusCode((int)response.StatusCode, "Fejl ved afsendelse til ShippingService");
+            //}
         }
     }
 }

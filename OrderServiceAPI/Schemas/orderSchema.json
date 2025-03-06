@@ -3,6 +3,10 @@
   "title": "Order",
   "type": "object",
   "properties": {
+    "OrderId": {
+      "type": "integer",
+      "minimum": 0
+    },
     "CustomerName": {
       "type": "string",
       "minLength": 1
@@ -21,7 +25,7 @@
     },
     "CompanyId": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 0
     },
     "Items": {
       "type": "array",
@@ -29,6 +33,10 @@
       "items": {
         "type": "object",
         "properties": {
+          "ProductId": {
+            "type": "integer",
+            "minimum": 0
+          },
           "ProductName": {
             "type": "string",
             "minLength": 1

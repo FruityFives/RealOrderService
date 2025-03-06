@@ -11,6 +11,6 @@ namespace Model
         public int ProductId { get; set; } // Produktets ID - bliver ikke brugt
         public string ProductName { get; set; } = string.Empty; // Navn på produktet
         public int Quantity { get; set; } // Antal af produktet
-        public decimal Price { get; set; } // Pris per enhed - Bliver ikke brugt
+       
     }
 }
